@@ -46,7 +46,7 @@ runs:
         set -euo pipefail
 
         mkdir -p "$HOME/workdir/sql_student/"
-        cp "./${{ inputs.sql-path }}"*.sql "$HOME/workdir/sql_student/"
+        cp "./${{ inputs.sql-path }}/"*.sql "$HOME/workdir/sql_student/"
 
         mkdir -p "$HOME/workdir/sql_answer/"
         cp "${{ inputs.module-path }}/sql_answer/"*.sql "$HOME/workdir/sql_answer/"
