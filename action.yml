@@ -48,6 +48,8 @@ runs:
         cp ./sql/*.sql "$HOME/workdir/sql_student/"
 
         mkdir -p "$HOME/workdir/sql_answer/"
+        ls -la "$MODULE_PATH"
+        ls -la "$MODULE_PATH/sql_answer/"
         cp "$MODULE_PATH/sql_answer/*.sql" "$HOME/workdir/sql_answer/"
         cp "$MODULE_PATH/test_cases.py" "$HOME/workdir/"
 
