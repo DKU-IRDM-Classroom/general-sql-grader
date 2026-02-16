@@ -24,15 +24,14 @@ runs:
       run: |
         : 환경 준비
         set -euo pipefail
-        MODULE_PATH="${{ inputs.module-path }}"
 
         mkdir -p "$HOME/workdir"
         chmod 777 "$HOME/workdir"
 
         pip install -qq --disable-pip-version-check pytest pytest-timeout
 
-        if [ -f "$MODULE_PATH/requirements.txt" ]; then
-          cp "$MODULE_PATH/requirements.txt" ./
+        if [ -f "${{ inputs.module-path }}/requirements.txt" ]; then
+          cp "${{ inputs.module-path }}/requirements.txt" ./
           pip install -r ./requirements.txt
         fi
 
@@ -42,16 +41,13 @@ runs:
       run: |
         : 테스트 수집
         set -euo pipefail
-        MODULE_PATH="${{ inputs.module-path }}"
 
         mkdir -p "$HOME/workdir/sql_student/"
         cp ./sql/*.sql "$HOME/workdir/sql_student/"
 
         mkdir -p "$HOME/workdir/sql_answer/"
-        ls -la "$MODULE_PATH"
-        ls -la "$MODULE_PATH/sql_answer/"
-        cp "$MODULE_PATH/sql_answer/*.sql" "$HOME/workdir/sql_answer/"
-        cp "$MODULE_PATH/test_cases.py" "$HOME/workdir/"
+        cp "${{ inputs.module-path }}/sql_answer/"*.sql "$HOME/workdir/sql_answer/"
+        cp "${{ inputs.module-path }}/test_cases.py" "$HOME/workdir/"
 
         cd "$HOME/workdir"
         pytest test_cases.py --collect-only --quiet | head -n -2 > ./nodeids.txt
