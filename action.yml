@@ -33,13 +33,13 @@ runs:
         docker run -d \
           --name db \
           -e POSTGRES_USER=postgres \
-          -e POSTGRES_PASSWORD=password \
-          -e POSTGRES_DB=test \
+          -e POSTGRES_PASSWORD=postgres \
+          -e POSTGRES_DB=postgres \
           -p 5432:5432 \
           postgres:16 > /dev/null
 
         for i in {1..30}; do
-          if docker exec db pg_isready -U postgres -d test > /dev/null 2>&1; then
+          if docker exec db psql -U postgres -d postgres -c "SELECT 1" > /dev/null 2>&1; then
             echo "db ready"
             break
           fi
@@ -48,9 +48,9 @@ runs:
 
         echo "DB_HOST=localhost" >> "$GITHUB_ENV"
         echo "DB_PORT=5432" >> "$GITHUB_ENV"
-        echo "DB_NAME=test" >> "$GITHUB_ENV"
+        echo "DB_NAME=postgres" >> "$GITHUB_ENV"
         echo "DB_USER=postgres" >> "$GITHUB_ENV"
-        echo "DB_PASSWORD=password" >> "$GITHUB_ENV"
+        echo "DB_PASSWORD=postgres" >> "$GITHUB_ENV"
 
     - name: 환경 준비
       id: prepare-grader
