@@ -21,6 +21,35 @@ runs:
   using: "composite"
   steps:
 
+    - name: DB 준비
+      id: prepare-db
+      shell: bash
+      run: |
+        : DB 준비
+        set -euo pipefail
+
+        docker run -d \
+          --name db \
+          -e POSTGRES_USER=user \
+          -e POSTGRES_PASSWORD=password \
+          -e POSTGRES_DB=database \
+          -p 5432:5432 \
+          postgres:16
+
+        for i in {1..30}; do
+          if docker exec db pg_isready -U user -d database > /dev/null 2>&1; then
+            echo "db ready"
+            break
+          fi
+          sleep 1
+        done
+
+        echo "DB_HOST=localhost" >> "$GITHUB_ENV"
+        echo "DB_PORT=5432" >> "$GITHUB_ENV"
+        echo "DB_NAME=database" >> "$GITHUB_ENV"
+        echo "DB_USER=user" >> "$GITHUB_ENV"
+        echo "DB_PASSWORD=password" >> "$GITHUB_ENV"
+
     - name: 환경 준비
       id: prepare-grader
       shell: bash
@@ -31,7 +60,7 @@ runs:
         mkdir -p "$HOME/workdir"
         chmod 777 "$HOME/workdir"
 
-        pip install -qq --disable-pip-version-check pytest pytest-timeout
+        pip install -qq --disable-pip-version-check pytest pytest-timeout psycopg2-binary
 
         if [ -f "${{ inputs.module-path }}/requirements.txt" ]; then
           cp "${{ inputs.module-path }}/requirements.txt" ./
@@ -46,14 +75,16 @@ runs:
         set -euo pipefail
 
         mkdir -p "$HOME/workdir/sql_student/"
-        cp "./${{ inputs.sql-path }}/"*.sql "$HOME/workdir/sql_student/"
+        shopt -s nullglob
+        cp "./${{ inputs.sql-path }}/"*.sql "$HOME/workdir/sql_student/" || true
 
         mkdir -p "$HOME/workdir/sql_answer/"
         cp "${{ inputs.module-path }}/sql_answer/"*.sql "$HOME/workdir/sql_answer/"
         cp "${{ inputs.module-path }}/test_cases.py" "$HOME/workdir/"
 
         cd "$HOME/workdir"
-        pytest test_cases.py --collect-only --quiet | head -n -2 > ./nodeids.txt
+        pytest test_cases.py --collect-only --quiet > ./nodeids.txt
+        grep "::" ./nodeids.txt > tmp && mv tmp ./nodeids.txt
         TOTAL=$(wc -l < ./nodeids.txt)
 
         echo "TOTAL=$TOTAL" >> "$GITHUB_ENV"
@@ -93,9 +124,9 @@ runs:
             PASS=$((PASS+1))
             continue
           fi
-          if grep -q "Timeout" "$OUT"; then
+          if grep -qi "timeout" "$OUT"; then
             echo "[Case ${n}] Time Limit Exceeded <${NODENAME}>"
-          elif [ -f "$XML" ] && grep -q "Timeout" "$XML"; then
+          elif [ -f "$XML" ] && grep -qi "timeout" "$XML"; then
             echo "[Case ${n}] Time Limit Exceeded <${NODENAME}>"
           else
             echo "[Case ${n}] FAIL <${NODENAME}>"
@@ -105,3 +136,12 @@ runs:
 
         echo "::notice::점수 ${PASS}/${{ env.TOTAL }}"
         echo "::notice title=Autograding report::{\"totalPoints\":${PASS},\"maxPoints\":${{ env.TOTAL }}}"
+
+    - name: DB 종료
+      id: remove-db
+      shell: bash
+      run: |
+        : DB 종료
+        set -euo pipefail
+
+        docker rm -f db || true
