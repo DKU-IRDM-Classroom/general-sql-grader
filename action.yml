@@ -29,7 +29,7 @@ runs:
         set -euo pipefail
 
         docker rm -f db > /dev/null 2>&1 || true
-        docker pull -q postgres:16
+        docker pull -q postgres:16 > /dev/null 2>&1 || true
         docker run -d \
           --name db \
           -e POSTGRES_USER=user \
@@ -62,11 +62,11 @@ runs:
         mkdir -p "$HOME/workdir"
         chmod 777 "$HOME/workdir"
 
-        python -m pip install -qq --disable-pip-version-check pytest pytest-timeout psycopg2-binary
+        pip install --user -qq --disable-pip-version-check pytest pytest-timeout psycopg2-binary
 
         if [ -f "${{ inputs.module-path }}/requirements.txt" ]; then
           cp "${{ inputs.module-path }}/requirements.txt" ./
-          pip install -r ./requirements.txt
+          pip install --user -qq --disable-pip-version-check -r ./requirements.txt
         fi
 
     - name: 테스트 수집
